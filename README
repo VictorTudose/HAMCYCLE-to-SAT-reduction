@@ -1,0 +1,158 @@
+Tudose Victor
+323CB
+
+----------------------------------------------------------------
+
+Reducere de la HAMCYCLE la SAT :
+
+Trebuie gasita , pe baza grafului , o expresie booleana astfel incat :
+	SAT(EXPR(graf)) == 1 <=> HAMCYCLE(graf)==1
+
+O expresie satisfiabila echivalenta trebuie sa encodeze urmatoarele restrictii:
+P1	toate nodurile apar in drumul ales
+P2	niciun nod nu apare de doua ori
+P3	fiecare pozitie e ocupata
+P4	doua noduri nu sunt pe aceiasi pozitie
+P5	nodurile ce apar pe pozitii consecutive sunt adiacente
+P6	fiecare nod are macar gradul 2
+P7 	graful este neorientat
+P8	nodurile aflate la dist unu fata de inceput au muchie cu el
+P9	nodurile care nu au muchie cu nodul1 nu au distanta 1
+
+Din cauza alegeri semnificatiei lui a(pos,node)
+P1 <=> P3
+P2 <=> P4
+
+Propozitiile pot fi scrise ca si clauze ce au subclauze regulate pentru fiecare nod
+
+
+P1 e cel mai usor de encodat intr-o clauza in cazul dat
+P1 ~~ C1 = c1(1)&c1(2)&...&c1(n)
+
+c1(node)= (a(1,node)|a(2,node)|...|a(n/2+1,node))
+
+Atat pentru P2 si cat si pt P5 apar subclause redundante care incetinesc rezolvarea expresiei
+
+
+P2 : un nod apare pe o pozitie daca si numai daca nu mai apare pe nici o alta pozitie
+
+Exemplu : pt un graf cu 6 noduril
+( a(2,2)<=>(!a(3,2)&!a(4,2)) ) & ( a(3,2)<=>(!a(2,2)&!a(4,2)) ) =
+(a(2,2)<=>!a(3,2)) & (a(2,2)<=>!a(4,2)) & (a(3,2)<=>!a(2,2)) & (a(3,2)<=>!a(4,2)) =
+(!a(2,2)|!a(3,2)) & (!a(2,2)|a(3,2)) & (!a(2,2)|!a(4,2)) & (!a(2,2)|a(4,2)) & (!a(3,2)|!a(2,2)) & (!a(3,2)|a(2,2))
+	&(!a(3,2)|!a(4,2)) & (!a(3,2)|a(4,2))
+(!a(2,2)|!a(3,2)) & (!a(2,2)|a(3,2)) & (!a(3,2)|!a(2,2)) & (!a(3,2)|a(2,2)) & (!a(2,2)|!a(4,2)) & (!a(2,2)|a(4,2)) &(!a(3,2)|!a(4,2)) & (!a(3,2)|a(4,2))
+Se ajunge la o forma de tipul (x<=>!y ) & ( y<=>!x ) ce se reduce la x<=>!y
+Deci pentru a scapa de clauze redundante trebuie alese doar de perechi de pozitii distincte
+Se poate alege o pozitie si dupa scrie pentru ea echivalentele cu pozitiile anterioare
+
+Deci avem clauza CP2 = cp2(1,node) & cp2(2,node) & ... & cp2(n/2+1,node) pt fiecare nod
+cp2(pos,node) = AND ( a(pos,node) <=> !a(pos-i,node) ) ; pt i de la 1 la pos-1
+cp2(pos,node) = a(pos,node) <=> (!a(pos-1,node)& !a(pos-2,node)& ... & !a(0,node))
+cp2(pos,node) = a(pos,node) <=> !(a(pos-1,node)| a(pos-2,node)& ... | a(0,node))
+
+
+P5:
+Exemplu : graf cu 4 noduri  si (2,4) muchie
+
+((a(2,2)<=>a(3,4))|(a(2,2)<=>a(1,4))) & ((a(3,4)<=>a(2,2))|(a(3,4)<=>a(1,2))) = 
+	; notam A:=a(2,2)
+	; notam B:=a(3,4)
+	; notam C:=a(1,4)
+	; notam D:=a(1,2)
+	; folosim notatia : x=y x<=>y
+	;					x+y x|y
+	;					xy sau x*y x&y
+	; notam X:= A<=>B
+	; notam Y:= A<=>C
+	; notam Z:= B<=>D
+((A<=>B)|(A<=>C)) & ((B<=>A)|(B<=>D)) =
+((A=B)+(A=C)) * ((B=A)+(B=D)) =
+(X+Y)(X+Z) = X + XZ + XY + YZ
+XZ = (A=B) & (B=D) = A=D = a(2,2)=a(1,2) = 0
+XY = (A=C) & (A=B) = B=C = a(3,4)=a(1,4) = 0
+X+YZ = (A=B) | ( B=D )
+XY+YZ+X!Y=Y(X+Z)+X!Y
+X!Y= (A=B) & (A!=C) = (B!=C) = 1
+Y(X+Z)  
+(a(2,2)<=>a(1,4)) & (a(3,2) <=> ( a(1,2)|a(2,2) ) )
+
+Deci este putem simplifica propozitia ca fiind pe forma
+a(pos,node)<=> (a(0,node2)|a(1,nod2),...|a(0,node3)|...) 	\\ iau toate poz prec si toti vecinii
+Intru cat echivalente cu positii mai mari ca pos sunt nonnecesare
+
+Asemanator ca la P2 :
+a(2,2) <=> a(1,3) & a(3,2) <=> (a(1,3)|a(2,3)) =
+a(2,2) <=> a(1,3) & ( a(3,2) <=> a(1,3) | a(3,2) <=> a(2,3) ) =
+( a(2,2) <=> a(1,3) | a(3,2) <=> a(1,3) ) & ( a(2,2) <=> a(1,3) | a(3,2) <=> a(2,3) ) 
+Iar
+( a(2,2) <=> a(1,3) | a(3,2) <=> a(1,3) ) = ( a(1,3) <=> (a(3,2)|a(2,2))) care e o clauza redundanta
+Deci echivalente de tipul a(pos,node)<=>a(pos-i,node2) sunt nonnecesare pt i>1
+
+Deci avem clauza CP4 cp4(pos,node) = a(pos,node) <=> ( AND (a(pos-1,node2) ) )	; pt fiecare nod vecin 
+Se poate adauga faptul ca trebuie sa existe si muchia deci (spre exemplu)
+a(2,2) <=> (a(1,3)&x(2,3))
+Deci 
+cp5(pos,node) = a(pos,node) <=> AND (a(pos-1,node_i))	; node_i vecin
+
+Se observa ca cp5(pos,node) si cp2(pos,node) se pot combina fiind de forma
+x<=>y & x<=>z care este egala cu x <=> (y&z)
+
+Combinarea lor formeaza o noua clauza creata in program de functia Perms() 
+
+
+P6	
+Pt noduri cu grad 2
+	x(i,j)&x(i,z)
+Pt noduri cu grad > n
+	atLeastTwo(x(node,node_i))	;	node_i vecin
+Exemplu pt 2 are vecini 3,4,5
+x(2,3)&x(2,4)&!x(2,5) |
+x(2,3)&!x(2,4)&x(2,5) |
+!x(2,3)&x(2,4)&x(2,5)
+Expresia va incetata sa mai fie  evaluata daca se gasesc doi vecini
+cp6()
+
+
+P7
+Se ia fiecare pereche (i,j) si se adauga subclauza x(i,j)<=>x(j,i) in clauza cp7()
+
+
+P8
+
+a(1,node)<=>x(i,node)
+
+
+P9	nodurile care nu au muchie cu nodul1 nu au distanta 1
+
+!a(1,node)<=>!x(1,node)
+x(1,node)=0
+!a(1,node)<=>!x(1,node) = !a(1,node)
+
+
+
+Functiile folosite in program si complexitatile lor :
+
+private String AtLeastTwoNeighbours(int node) = O(n^3)
+
+public Clause Paths(int node) O(n)
+
+public Clause Edges(int node) O(n^3)
+
+public Clause Edges() O(n^4)
+
+public Clause Paths() O(n^2)
+
+public Clause Conexity() O(n^2)
+
+public Clause Follows() O(n)
+
+public Clause notPrc(int pos,int node) O(n)
+
+public Clause SemiPerm(int pos,int node) O(n)
+
+public Clause Perm(int pos,int node) O(n)
+
+public Clause Perms O(n^3)
+
+Programul per total : o(n^4)
